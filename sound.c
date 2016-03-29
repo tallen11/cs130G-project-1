@@ -27,9 +27,9 @@ int main(/*int argc, char const *argv[]*/)
 	srand(time(NULL));
 
 	ToneSequence *seq = make_sequence();
-	for (int i = 0; i < 50; ++i) {
-		uint32_t randIndex = rand() % 7;
-		add_tone(seq, make_tone(c_scale[randIndex] * 7, 0.1));
+	for (int i = 0; i < 15; ++i) {
+		// uint32_t randIndex = rand() % 7;
+		add_tone(seq, make_tone(c_scale[i > 7 ? 14 - i : i] * 7, 0.25));
 	}
 
 	// add_tone(seq, make_tone(659.26, 0.5));
@@ -49,7 +49,6 @@ void writeTone(FILE *file, Tone tone)
 	int16_t waveformData[sampleCount];
 	for (uint32_t i = 0; i < sampleCount; ++i) {
 		double step = (double)i / WAV_SAMPLES_PER_SEC;
-		double en = envelope(i, sampleCount);
 		waveformData[i] = envelope(i, sampleCount) * MAX_VOLUME * sin(tone.frequency * step * 2 * M_PI);
 	}
 
