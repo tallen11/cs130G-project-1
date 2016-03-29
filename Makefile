@@ -12,7 +12,7 @@ tone.o: tone.c tone.h
 wavefile.o: wavefile.c wavefile.h
 	$(CC) wavefile.c $(CFLAGS) -c
 
-sound.o: sound.c
+sound.o: sound.c scales.h
 	$(CC) sound.c $(CFLAGS) -c
 
 clean:
