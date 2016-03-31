@@ -1,6 +1,8 @@
 #ifndef SCALES_H
 #define SCALES_H
 
+#include "Tone.h"
+
 #define C1 32.703
 #define D1 36.708
 #define E1 41.203

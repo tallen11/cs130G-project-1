@@ -13,7 +13,7 @@ const int MAX_VOLUME = 32000;
 void writeToneData(FILE *file, double *toneData, uint32_t length);
 void writeToneSineWave(FILE *file, Tone tone);
 void writeToneSquareWave(FILE *file, Tone tone);
-void writeChord(FILE *file, uint32_t length);
+void writeChord(FILE *file, double first, double sec, double third, uint32_t octave, double length);
 void writeLoop(FILE *file, uint32_t loopCount, ToneSequence *sequence);
 double envelope(uint32_t x, uint32_t len);
 void normalizeData(double *data, uint32_t length);
@@ -33,7 +33,10 @@ int main(/*int argc, char const *argv[]*/)
 {
 	FILE *file = wavfile_open("sound.wav");
 
-	writeChord(file, 5);
+	writeChord(file, C1, E1, G1, 7, 1.0);
+	writeChord(file, G1, B1, D1, 7, 1.0);
+	writeChord(file, A1, C1, E1, 7, 1.0);
+	writeChord(file, D1, 46.249, A1, 7, 1.0);
 
 	// srand(time(NULL));
 
@@ -69,14 +72,6 @@ void writeToneSineWave(FILE *file, Tone tone)
 	addSineWave(data, sampleCount, tone);
 	writeToneData(file, data, sampleCount);
 	free(data);
-
-	// for (uint32_t i = 0; i < sampleCount; ++i) {
-	// 	double step = (double)i / WAV_SAMPLES_PER_SEC;
-	// 	data[i] = sin(tone.frequency * step * 2 * M_PI);
-	// 	for (uint32_t h = 2; h < tone.harmonics + 2; ++h) {
-	// 		data[i] += sin(tone.frequency * h * step * 2 * M_PI);
-	// 	}
-	// }
 }
 
 void writeToneSquareWave(FILE *file, Tone tone)
@@ -86,14 +81,6 @@ void writeToneSquareWave(FILE *file, Tone tone)
 	addSquareWave(data, sampleCount, tone);
 	writeToneData(file, data, sampleCount);
 	free(data);
-
-	// int16_t waveformData[sampleCount];
-	// for (uint32_t i = 0; i < sampleCount; ++i) {
-	// 	double step = (double)i / WAV_SAMPLES_PER_SEC;
-	// 	waveformData[i] = envelope(i, sampleCount) * MAX_VOLUME * (sin(tone.frequency * step * 2 * M_PI) > 0.0 ? 1 : -1);
-	// }
-
-	// wavfile_write(file, waveformData, sampleCount);
 }
 
 void writeLoop(FILE *file, uint32_t loopCount, ToneSequence *toneSequence)
@@ -106,14 +93,14 @@ void writeLoop(FILE *file, uint32_t loopCount, ToneSequence *toneSequence)
 	}
 }
 
-void writeChord(FILE *file, uint32_t length)
+void writeChord(FILE *file, double first, double sec, double third, uint32_t octave, double length)
 {
 	uint32_t sampleCount = ceil(WAV_SAMPLES_PER_SEC * length);
 	double *data = malloc(sizeof(double) * sampleCount);
 	buildChord(data, sampleCount, 
-					 make_tone(C1 * 7, length, 0),
-					 make_tone(E1 * 7, length, 0),
-					 make_tone(G1 * 7, length, 0));
+					 make_tone(first * octave, length, 1),
+					 make_tone(sec * octave, length, 3),
+					 make_tone(third * octave, length, 5));
 
 	writeToneData(file, data, sampleCount);
 	free(data);
