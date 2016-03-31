@@ -1,11 +1,12 @@
 #include <stdlib.h>
 #include "tone.h"
 
-Tone make_tone(double freq, double len)
+Tone make_tone(double freq, double len, uint32_t harmonics)
 {
 	Tone tone;
 	tone.frequency = freq;
 	tone.length = len;
+	tone.harmonics = harmonics;
 
 	return tone;
 }

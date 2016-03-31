@@ -6,6 +6,7 @@
 typedef struct {
 	double frequency;
 	double length;
+	uint32_t harmonics;
 } Tone;
 
 typedef struct {
@@ -14,7 +15,7 @@ typedef struct {
 	uint32_t toneSlots;
 } ToneSequence;
 
-Tone make_tone(double freq, double len);
+Tone make_tone(double freq, double len, uint32_t harmonics);
 ToneSequence* make_sequence();
 void add_tone(ToneSequence *sequence, Tone tone);
 
