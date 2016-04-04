@@ -13,9 +13,11 @@ const int MAX_VOLUME = 32000;
 void writeToneData(FILE *file, double *toneData, uint32_t length);
 void writeToneSineWave(FILE *file, Tone tone);
 void writeToneSquareWave(FILE *file, Tone tone);
+void writeToneSawWave(FILE *file, Tone tone);
 void writeExperimentalWave(FILE *file, Tone tone);
 void writeChord(FILE *file, double first, double sec, double third, uint32_t octave, double length);
 void writeLoop(FILE *file, uint32_t loopCount, ToneSequence *sequence);
+
 double envelope(uint32_t x, uint32_t len);
 void normalizeData(double *data, uint32_t length);
 int16_t* packageData(double *data, uint32_t length);
@@ -27,7 +29,7 @@ void addSuperSawWave(double *data, uint32_t length, Tone tone, uint32_t layers);
 
 void buildChord(double *data, uint32_t length, Tone tone1, Tone tone2, Tone tone3);
 
-void buildChordArp(double *data, uint32_t length, Tone tone1, Tone tone2, Tone tone3);
+// void buildChordArp(double *data, uint32_t length, Tone tone1, Tone tone2, Tone tone3);
 
 void filterTremolo(double *data, uint32_t length, double frequency);
 void addSinWaveLFOPhaser(double *data, uint32_t length, Tone tone, double frequency);
@@ -40,11 +42,14 @@ double fRand(double fMin, double fMax)
 
 int main(/*int argc, char const *argv[]*/)
 {
-	srand(time(NULL));
+	// srand(time(NULL));
 
 	FILE *file = wavfile_open("sound.wav");
 
-	writeExperimentalWave(file, make_tone(40.0, 5.0, 0));
+	writeToneSineWave(file, make_tone(440.0, 5.0, 0));
+	writeToneSquareWave(file, make_tone(440.0, 5.0, 0));
+	writeToneSawWave(file, make_tone(440.0, 5.0, 0));
+	writeExperimentalWave(file, make_tone(440.0, 5.0, 0));
 
 	// ToneSequence *s = make_sequence();
 	// add_tone(s, make_tone(200.0, 1.0, 0));
@@ -70,6 +75,7 @@ int main(/*int argc, char const *argv[]*/)
 	// // add_tone(seq, make_tone(0.0, 0.5));
 
 	// writeLoop(file, 5, seq);
+
 	wavfile_close(file);
 
 	return 0;
@@ -99,6 +105,15 @@ void writeToneSquareWave(FILE *file, Tone tone)
 	uint32_t sampleCount = ceil(WAV_SAMPLES_PER_SEC * tone.length);
 	double *data = malloc(sizeof(double) * sampleCount);
 	addSquareWave(data, sampleCount, tone);
+	writeToneData(file, data, sampleCount);
+	free(data);
+}
+
+void writeToneSawWave(FILE *file, Tone tone)
+{
+	uint32_t sampleCount = ceil(WAV_SAMPLES_PER_SEC * tone.length);
+	double *data = malloc(sizeof(double) * sampleCount);
+	addSawtoothWave(data, sampleCount, tone);
 	writeToneData(file, data, sampleCount);
 	free(data);
 }
@@ -164,34 +179,45 @@ void addSineWave(double *data, uint32_t length, Tone tone)
 
 void addSquareWave(double *data, uint32_t length, Tone tone)
 {
+	// for (uint32_t i = 0; i < length; ++i) {
+	// 	double step = (double)i / WAV_SAMPLES_PER_SEC;
+	// 	data[i] += (sin(tone.frequency * step * 2 * M_PI) > 0.0 ? 1.0 : -1.0);
+	// 	for (uint32_t h = 2; h < tone.harmonics + 2; ++h) {
+	// 		data[i] += (sin(tone.frequency * h * step * 2 * M_PI) > 0.0 ? 1.0 : -1.0);
+	// 	}
+	// }
+
 	for (uint32_t i = 0; i < length; ++i) {
 		double step = (double)i / WAV_SAMPLES_PER_SEC;
-		data[i] += (sin(tone.frequency * step * 2 * M_PI) > 0.0 ? 1.0 : -1.0);
-		for (uint32_t h = 2; h < tone.harmonics + 2; ++h) {
-			data[i] += (sin(tone.frequency * h * step * 2 * M_PI) > 0.0 ? 1.0 : -1.0);
+
+		data[i] = sin(tone.frequency * step * 2 * M_PI);
+		for (uint32_t v = 2; v * tone.frequency < WAV_SAMPLES_PER_SEC/2.0; ++v) {
+			data[i] += sin((2 * v - 1) * tone.frequency * step * 2 * M_PI) / (2 * v - 1);
 		}
+
+		data[i] *= 4.0 / M_PI;
 	}
 }
 
 void addSawtoothWave(double *data, uint32_t length, Tone tone)
 {
-	tone.harmonics = 50;
-	addSineWave(data, length, tone);
+	// tone.harmonics = 50;
+	// addSineWave(data, length, tone);
+
+	for (uint32_t i = 0; i < length; ++i) {
+		double step = (double)i / WAV_SAMPLES_PER_SEC;
+		data[i] = sin(tone.frequency * step * 2 * M_PI);
+		for (uint32_t v = 2; v * tone.frequency < WAV_SAMPLES_PER_SEC/2.0; ++v) {
+			data[i] += sin(v * tone.frequency * step * 2 * M_PI) / (double)v;
+		}
+
+		data[i] = 0.5 - (1.0 / M_PI) * data[i];
+	}
 }
 
 void addSuperSawWave(double *data, uint32_t length, Tone tone, uint32_t layers)
 {
-	tone.harmonics = 50;
-	for (uint32_t l = 0; l < layers; ++l) {
-		for (uint32_t i = 0; i < length; ++i) {
-			double step = (double)i / WAV_SAMPLES_PER_SEC;
-			double inside = (tone.frequency * step * 2 * M_PI);
-			data[i] += sin(inside + 0.01 * M_PI * l);
-			for (uint32_t h = 2; h < tone.harmonics + 2; ++h) {
-				data[i] += sin(tone.frequency * h * step * 2 * M_PI + 0.01 * M_PI * l);
-			}
-		}
-	}
+	
 }
 
 void buildChord(double *data, uint32_t length, Tone tone1, Tone tone2, Tone tone3)
@@ -205,11 +231,11 @@ void buildChord(double *data, uint32_t length, Tone tone1, Tone tone2, Tone tone
 	// addSquareWave(data, length, tone3);
 }
 
-void buildChordArp(double *data, uint32_t length, Tone tone1, Tone tone2, Tone tone3)
-{
-	const int arpeggioFreq = ceil(WAV_SAMPLES_PER_SEC * 0.1);
+// void buildChordArp(double *data, uint32_t length, Tone tone1, Tone tone2, Tone tone3)
+// {
+// 	const int arpeggioFreq = ceil(WAV_SAMPLES_PER_SEC * 0.1);
 
-}
+// }
 
 void filterTremolo(double *data, uint32_t length, double frequency)
 {
